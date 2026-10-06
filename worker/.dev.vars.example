@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local wrangler dev. Never commit .dev.vars.
+TYPESAFE_API_KEY=replace_me
+GITHUB_TOKEN=replace_me
+TURNSTILE_SECRET=replace_me_optional

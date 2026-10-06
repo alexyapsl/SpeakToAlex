@@ -1,0 +1,14 @@
+name = "speaktoalex-route"
+main = "src/index.js"
+compatibility_date = "2024-09-25"
+
+[vars]
+GITHUB_OWNER = "alexyapsl"
+GITHUB_REPO = "SpeakToAlex-inbox"
+GITHUB_BRANCH = "main"
+ALLOWED_ORIGIN = "https://alexyapsl.github.io"
+
+# Optional: bind a KV namespace named RATE_LIMIT_KV for cross-isolate rate limiting.
+# [[kv_namespaces]]
+# binding = "RATE_LIMIT_KV"
+# id = "your_kv_namespace_id"

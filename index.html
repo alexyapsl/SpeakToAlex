@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SpeakToAlex</title>
+    <meta name="description" content="Leave Alex a message. Urgent requests are routed to WhatsApp." />
+    <!-- Set this after deploying the Cloudflare Worker. -->
+    <meta name="speaktoalex-api" content="https://speaktoalex-route.YOUR-SUBDOMAIN.workers.dev/route" />
+    <!-- Optional: set to enable Cloudflare Turnstile. -->
+    <meta name="turnstile-site-key" content="" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="card">
+      <h1>SpeakToAlex</h1>
+      <p class="intro">
+        Leave a short request. If it is genuinely urgent, this page may send you to WhatsApp.
+        Otherwise Alex will read it later.
+      </p>
+
+      <form id="request-form">
+        <label for="message">Your message</label>
+        <textarea
+          id="message"
+          name="message"
+          maxlength="4000"
+          required
+          placeholder="Example: Samsung Shop checkout payment is failing for multiple users..."
+        ></textarea>
+        <div id="turnstile-slot" class="turnstile-slot"></div>
+        <button id="submit" type="submit">Send</button>
+      </form>
+
+      <section id="result" class="result" hidden></section>
+      <p class="fine-print">Please don’t include passwords, API keys, or other secrets.</p>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
