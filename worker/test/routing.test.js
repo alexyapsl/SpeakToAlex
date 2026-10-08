@@ -30,16 +30,16 @@ test("personal low urgency stays in inbox", () => {
   assert.equal(route.decision, "inbox");
 });
 
-test("rounded score boundary: raw 6.5 maps to 8 and escalates", () => {
-  const route = decideRoute(answers({ domain: "personal", personalScore: 6.5 }));
-  assert.equal(route.urgency.mapped, 7.5);
-  assert.equal(route.urgency.rounded, 8);
+test("rounded score boundary: raw 5.5 maps to 7 and escalates", () => {
+  const route = decideRoute(answers({ domain: "personal", personalScore: 5.5 }));
+  assert.equal(route.urgency.mapped, 6.5);
+  assert.equal(route.urgency.rounded, 7);
   assert.equal(route.decision, "whatsapp");
 });
 
-test("rounded score boundary: raw 6.49 stays below 8", () => {
-  const route = decideRoute(answers({ domain: "personal", personalScore: 6.49 }));
-  assert.equal(route.urgency.rounded, 7);
+test("rounded score boundary: raw 5.49 stays below 7", () => {
+  const route = decideRoute(answers({ domain: "personal", personalScore: 5.49 }));
+  assert.equal(route.urgency.rounded, 6);
   assert.equal(route.decision, "inbox");
 });
 
@@ -54,6 +54,7 @@ test("score can be derived from probabilities", () => {
   const urgency = scoreToUrgency({ type: "score", probabilities: { "7": 1 }, confidence: 1 });
   assert.equal(urgency.raw, 7);
   assert.equal(urgency.rounded, 8);
+  assert.equal(urgency.threshold, 7);
 });
 
 test("TypeSafe request has ten urgency levels", () => {

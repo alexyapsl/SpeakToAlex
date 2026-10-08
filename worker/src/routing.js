@@ -40,7 +40,7 @@ export function buildTypeSafeRequest(message, now = new Date().toISOString()) {
       },
       work_urgency: {
         type: "score",
-        instructions: "Rate urgency of `request.message` assuming it is Samsung work. Use consequences and required response time, not just words like ASAP.",
+        instructions: "Rate urgency of `request.message` assuming it is Samsung work. Use consequences and required response time, not just words like ASAP. Hard deadlines count heavily: a sign-off, approval, or input due today or within a day that blocks other people is at least \"Very important; needs same-day response\". If Alex may be away and a delayed reply means missing the deadline, rate it even higher.",
         criteria: URGENCY_LEVELS,
       },
       personal_fun: {
@@ -53,7 +53,7 @@ export function buildTypeSafeRequest(message, now = new Date().toISOString()) {
       },
       personal_urgency: {
         type: "score",
-        instructions: "Rate urgency of `request.message` assuming it is personal. Use consequences and required response time, not just words like ASAP.",
+        instructions: "Rate urgency of `request.message` assuming it is personal. Use consequences and required response time, not just words like ASAP. Hard deadlines count heavily: anything due today or within a day that blocks other people is at least \"Very important; needs same-day response\". If Alex may be away and a delayed reply means missing the deadline, rate it even higher.",
         criteria: URGENCY_LEVELS,
       },
     },
@@ -80,7 +80,8 @@ export function scoreToUrgency(answer) {
     raw,
     mapped,
     rounded,
-    threshold: 8,
+    // 7 = "needs a same-day response"; 6 ("within 24 hours") stays in the inbox.
+    threshold: 7,
     confidence: answer?.confidence ?? null,
   };
 }
