@@ -6,9 +6,10 @@ Lists every stored message in the private GitHub inbox repo
 
 Usage: py scripts/inbox_digest.py
 Output:
-  TOTAL <n>
+  TOTAL <all-time n>
+  RECENT <last-24h m>
   - <received HKT> | <branch>/<label> | urg <n>/10 [FLAGS] | <message>
-or "INBOX EMPTY" when there is nothing stored.
+  (lines cover the last 24h only; prints NO RECENT MESSAGES when there are none)
 """
 import base64
 import json
@@ -67,12 +68,25 @@ def main():
 
     records.sort(key=lambda r: r.get("received_at", ""))
 
-    if not records:
-        print("INBOX EMPTY")
+    print(f"TOTAL {len(records)}")
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=24)
+    recent = []
+    for rec in records:
+        try:
+            received = datetime.fromisoformat(
+                rec.get("received_at", "").replace("Z", "+00:00")
+            )
+            if received >= cutoff:
+                recent.append(rec)
+        except Exception:
+            continue
+
+    print(f"RECENT {len(recent)}")
+    if not recent:
+        print("NO RECENT MESSAGES")
         return
 
-    print(f"TOTAL {len(records)}")
-    for rec in records:
+    for rec in recent:
         ts = rec.get("received_at", "")
         try:
             local = (
