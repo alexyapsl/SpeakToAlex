@@ -69,7 +69,9 @@ label {
 textarea {
   width: 100%;
   min-height: 52px;
-  resize: vertical;
+  max-height: 200px;
+  resize: none;
+  overflow-y: hidden;
   border: 1px solid var(--brand-mid-gray);
   border-radius: 12px;
   padding: 14px 16px;

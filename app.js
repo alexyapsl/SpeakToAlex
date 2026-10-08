@@ -142,6 +142,7 @@ form.addEventListener("submit", (event) => {
   if (!text || finished) return;
   addBubble("user", escapeHtml(text));
   textarea.value = "";
+  fitTextarea();
   sendMessage(text);
 });
 
@@ -151,5 +152,20 @@ textarea.addEventListener("keydown", (event) => {
     form.requestSubmit();
   }
 });
+
+// Keep the textarea tall enough to show the full placeholder hint (short
+// phone screens wrap it to several lines), and grow with the user's typing.
+const TEXTAREA_MAX_HEIGHT = 200;
+function fitTextarea() {
+  if (textarea.disabled) return;
+  const current = textarea.value;
+  if (!current) textarea.value = textarea.placeholder; // measure the hint's wrapped height
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.min(textarea.scrollHeight, TEXTAREA_MAX_HEIGHT)}px`;
+  textarea.value = current;
+}
+textarea.addEventListener("input", fitTextarea);
+window.addEventListener("resize", fitTextarea);
+fitTextarea();
 
 textarea.focus();
