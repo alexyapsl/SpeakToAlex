@@ -73,6 +73,19 @@ async function callTypeSafe(env, payload) {
   throw new Error("TypeSafe retry exhausted");
 }
 
+function buildScoring(record) {
+  return {
+    branch: record.branch,
+    labels: record.labels,
+    urgency: record.urgency,
+    high_urgency: record.high_urgency,
+    needs_review: record.needs_review,
+    confidence: record.confidence,
+    model: record.model,
+    routing_status: record.routing_status,
+  };
+}
+
 function buildRecord({ id, message, now, route, model, routingStatus = "routed", error = null }) {
   return {
     version: 1,
@@ -138,6 +151,7 @@ export default {
       const route = decideRoute(typeSafeResponse.answers);
       record = buildRecord({ id, message, now, route, model: typeSafeResponse.model });
     } catch (error) {
+      console.error("typesafe_routing_failed", String(error?.message || error));
       record = buildRecord({
         id,
         message,
@@ -156,8 +170,10 @@ export default {
         high_urgency: record.high_urgency,
         stored: true,
         path: stored.path,
+        scoring: buildScoring(record),
       });
     } catch (error) {
+      console.error("github_storage_failed", String(error?.message || error));
       if (record.decision === "whatsapp") {
         return json(env, request, 200, {
           id,
@@ -165,6 +181,7 @@ export default {
           high_urgency: true,
           stored: false,
           warning: "storage_failed",
+          scoring: buildScoring(record),
         });
       }
       return json(env, request, 502, { error: "storage_failed" });
