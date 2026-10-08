@@ -7,8 +7,11 @@ GITHUB_OWNER = "alexyapsl"
 GITHUB_REPO = "SpeakToAlex-inbox"
 GITHUB_BRANCH = "main"
 ALLOWED_ORIGIN = "https://alexyapsl.github.io"
+# OpenRouter chat model for the triage follow-up conversation (override anytime).
+CHAT_MODEL = "qwen/qwen3-30b-a3b-instruct-2507"
+# Max follow-up questions the agent may ask before it must finalize.
+MAX_FOLLOW_UPS = "3"
 
-# Optional: bind a KV namespace named RATE_LIMIT_KV for cross-isolate rate limiting.
-# [[kv_namespaces]]
-# binding = "RATE_LIMIT_KV"
-# id = "your_kv_namespace_id"
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "0c39df7c3785430ca28e306e8090530b"

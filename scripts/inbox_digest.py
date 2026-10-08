@@ -94,6 +94,8 @@ def main():
         routing_status = rec.get("routing_status")
         if routing_status and routing_status != "routed":
             flags.append(routing_status)
+        if rec.get("channel") == "chat":
+            flags.append(f"chat/{rec.get('follow_ups_used', 0)}fu")
         flag_str = f" [{' '.join(flags)}]" if flags else ""
         message = " ".join((rec.get("message") or "").split())
         if len(message) > MAX_MSG_CHARS:
