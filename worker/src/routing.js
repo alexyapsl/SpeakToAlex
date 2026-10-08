@@ -11,6 +11,44 @@ export const URGENCY_LEVELS = [
   "Emergency; immediate human escalation because of severe safety, legal, financial, privacy, or similarly serious impact",
 ];
 
+// Senior Samsung HK leadership. Any request involving these people gets a
+// deterministic +2 urgency boost in code (see applyVipBoost) and Jev is told
+// to score them high in the first place.
+export const VIP_LIST = [
+  { name: "Yiyin Zhao", title: "President, Samsung Hong Kong" },
+  { name: "Josef Tse", title: "D2C Group Head (Alex's boss)" },
+  { name: "Billy Cheung", title: "MX Head of Department / 2nd in command, HK office" },
+  { name: "Martina Lai", title: "CE Head of Department / 2nd in command, HK office" },
+];
+export const VIP_BOOST = 2;
+
+const VIP_INSTRUCTION =
+  "Requests involving Samsung Hong Kong senior leadership are automatically high priority: Yiyin Zhao (HK President), Josef Tse (D2C Group Head, Alex's boss), Billy Cheung (MX Head of Department), Martina Lai (CE Head of Department). Anything touching these people is at least \"Very important; needs same-day response\", and higher if it also has a hard deadline or blocks them.";
+
+export function findVipMatches(text) {
+  if (typeof text !== "string" || !text) return [];
+  const haystack = text.toLowerCase();
+  return VIP_LIST.filter((vip) => {
+    const parts = vip.name.toLowerCase().split(/\s+/);
+    const forward = parts.join(" ");
+    const reversed = [...parts].reverse().join(" ");
+    return haystack.includes(forward) || haystack.includes(reversed);
+  }).map((vip) => vip.name);
+}
+
+export function applyVipBoost(route, text) {
+  const matches = findVipMatches(text);
+  if (!matches.length || !route?.urgency) return { route, matches, boost: 0 };
+  const boosted = { ...route, urgency: { ...route.urgency } };
+  boosted.urgency.raw = Math.min(9, boosted.urgency.raw + VIP_BOOST);
+  boosted.urgency.mapped = clamp(boosted.urgency.raw + 1, 1, 10);
+  boosted.urgency.rounded = clamp(Math.round(boosted.urgency.mapped), 1, 10);
+  boosted.high_urgency = boosted.urgency.rounded >= boosted.urgency.threshold;
+  boosted.decision =
+    !boosted.needs_review && boosted.high_urgency ? "whatsapp" : "inbox";
+  return { route: boosted, matches, boost: VIP_BOOST };
+}
+
 export function buildTypeSafeRequest(message, now = new Date().toISOString()) {
   const state = {
     request: { message },
@@ -40,7 +78,7 @@ export function buildTypeSafeRequest(message, now = new Date().toISOString()) {
       },
       work_urgency: {
         type: "score",
-        instructions: "Rate urgency of `request.message` assuming it is Samsung work. Use consequences and required response time, not just words like ASAP. Hard deadlines count heavily: a sign-off, approval, or input due today or within a day that blocks other people is at least \"Very important; needs same-day response\". If Alex may be away and a delayed reply means missing the deadline, rate it even higher.",
+        instructions: "Rate urgency of `request.message` assuming it is Samsung work. Use consequences and required response time, not just words like ASAP. Hard deadlines count heavily: a sign-off, approval, or input due today or within a day that blocks other people is at least \"Very important; needs same-day response\". If Alex may be away and a delayed reply means missing the deadline, rate it even higher. " + VIP_INSTRUCTION,
         criteria: URGENCY_LEVELS,
       },
       personal_fun: {

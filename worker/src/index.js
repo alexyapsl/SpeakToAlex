@@ -1,4 +1,4 @@
-import { buildTypeSafeRequest, decideRoute } from "./routing.js";
+import { applyVipBoost, buildTypeSafeRequest, decideRoute } from "./routing.js";
 import { storeMessage } from "./githubStorage.js";
 import { verifyTurnstile } from "./turnstile.js";
 import { rateLimit } from "./rateLimit.js";
@@ -92,6 +92,8 @@ function buildScoring(record) {
     confidence: record.confidence,
     model: record.model,
     routing_status: record.routing_status,
+    vip_matches: record.vip_matches ?? [],
+    vip_boost: record.vip_boost ?? 0,
   };
 }
 
@@ -148,8 +150,13 @@ async function finalizeChat(request, env, session, agentReply) {
   try {
     const payload = buildTypeSafeRequest(userText, now);
     const typeSafeResponse = await callTypeSafe(env, payload);
-    const route = decideRoute(typeSafeResponse.answers);
+    const { route, matches, boost } = applyVipBoost(
+      decideRoute(typeSafeResponse.answers),
+      userText,
+    );
     record = buildRecord({ id, message: firstMessage, now, route, model: typeSafeResponse.model });
+    record.vip_matches = matches;
+    record.vip_boost = boost;
   } catch (error) {
     console.error("typesafe_routing_failed", String(error?.message || error));
     record = buildRecord({
@@ -340,8 +347,13 @@ export default {
     try {
       const payload = buildTypeSafeRequest(message, now);
       const typeSafeResponse = await callTypeSafe(env, payload);
-      const route = decideRoute(typeSafeResponse.answers);
+      const { route, matches, boost } = applyVipBoost(
+        decideRoute(typeSafeResponse.answers),
+        message,
+      );
       record = buildRecord({ id, message, now, route, model: typeSafeResponse.model });
+      record.vip_matches = matches;
+      record.vip_boost = boost;
     } catch (error) {
       console.error("typesafe_routing_failed", String(error?.message || error));
       record = buildRecord({

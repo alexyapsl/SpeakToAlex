@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { buildTypeSafeRequest, decideRoute, scoreToUrgency } from "../src/routing.js";
+import { applyVipBoost, buildTypeSafeRequest, decideRoute, findVipMatches, scoreToUrgency } from "../src/routing.js";
 
 function answers({ domain = "work", domainConfidence = 0.95, workArea = "AX", personalFun = "fun", workScore = 0, personalScore = 0 }) {
   return {
@@ -63,4 +63,51 @@ test("TypeSafe request has ten urgency levels", () => {
   assert.equal(request.questions.work_urgency.criteria.length, 10);
   assert.equal(request.questions.personal_urgency.criteria.length, 10);
   assert.equal(request.state.request.message.includes("shop.samsung.com"), true);
+});
+
+test("findVipMatches catches full names in either order, case-insensitive", () => {
+  assert.deepEqual(findVipMatches("Josef Tse needs this signed"), ["Josef Tse"]);
+  assert.deepEqual(findVipMatches("message from zhao yiyin's office"), ["Yiyin Zhao"]);
+  assert.deepEqual(findVipMatches("MARTINA LAI called"), ["Martina Lai"]);
+  assert.deepEqual(findVipMatches("billy cheung and martina lai"), ["Billy Cheung", "Martina Lai"]);
+});
+
+test("findVipMatches ignores partial or absent names", () => {
+  assert.deepEqual(findVipMatches("billy is here"), []);
+  assert.deepEqual(findVipMatches("no vip content"), []);
+  assert.deepEqual(findVipMatches(""), []);
+  assert.deepEqual(findVipMatches(null), []);
+});
+
+test("applyVipBoost adds 2 points and can escalate to whatsapp", () => {
+  // raw 4.2 -> mapped 5.2 -> rounded 5 (inbox); VIP boost -> raw 6.2 -> rounded 7 (whatsapp)
+  const base = decideRoute(answers({ workScore: 4.2 }));
+  assert.equal(base.decision, "inbox");
+  const { route, matches, boost } = applyVipBoost(base, "Josef Tse asked for this");
+  assert.deepEqual(matches, ["Josef Tse"]);
+  assert.equal(boost, 2);
+  assert.equal(route.urgency.rounded, 7);
+  assert.equal(route.high_urgency, true);
+  assert.equal(route.decision, "whatsapp");
+});
+
+test("applyVipBoost clamps at the top of the scale", () => {
+  const base = decideRoute(answers({ workScore: 8.6 }));
+  const { route } = applyVipBoost(base, "Yiyin Zhao");
+  assert.equal(route.urgency.rounded, 10);
+});
+
+test("applyVipBoost does not override needs_review safety", () => {
+  const base = decideRoute(answers({ domainConfidence: 0.4, workScore: 8.2 }));
+  assert.equal(base.needs_review, true);
+  const { route } = applyVipBoost(base, "Josef Tse");
+  assert.equal(route.decision, "inbox");
+});
+
+test("applyVipBoost is a no-op without a name match", () => {
+  const base = decideRoute(answers({ workScore: 4.2 }));
+  const { route, matches, boost } = applyVipBoost(base, "random message");
+  assert.deepEqual(matches, []);
+  assert.equal(boost, 0);
+  assert.equal(route.urgency.rounded, 5);
 });

@@ -64,6 +64,9 @@ function scoringHtml(scoring) {
     parts.push(`confidence: ${Math.round(domainConfidence * 100)}%`);
   }
   if (scoring.needs_review) parts.push("needs review");
+  if (Array.isArray(scoring.vip_matches) && scoring.vip_matches.length) {
+    parts.push(`VIP: ${scoring.vip_matches.join(", ")} (+${scoring.vip_boost || 2})`);
+  }
   if (!parts.length) return "";
   return `<div class="scoring">Jev &rarr; ${escapeHtml(parts.join(" \u00b7 "))}</div>`;
 }
