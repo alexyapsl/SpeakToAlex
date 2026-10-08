@@ -32,7 +32,10 @@ export function findVipMatches(text) {
     const parts = vip.name.toLowerCase().split(/\s+/);
     const forward = parts.join(" ");
     const reversed = [...parts].reverse().join(" ");
-    return haystack.includes(forward) || haystack.includes(reversed);
+    if (haystack.includes(forward) || haystack.includes(reversed)) return true;
+    // First names of these VIPs are distinctive enough to match standalone.
+    const firstName = parts[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${firstName}\\b`).test(haystack);
   }).map((vip) => vip.name);
 }
 
