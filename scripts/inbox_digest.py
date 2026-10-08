@@ -113,10 +113,12 @@ def main():
         if rec.get("vip_matches"):
             flags.append(f"VIP:{','.join(rec['vip_matches'])}")
         flag_str = f" [{' '.join(flags)}]" if flags else ""
+        name = (rec.get("submitter_name") or "").strip()
+        who = f"{name}: " if name else ""
         message = " ".join((rec.get("message") or "").split())
         if len(message) > MAX_MSG_CHARS:
             message = message[: MAX_MSG_CHARS - 1] + "…"
-        print(f"- {local} | {branch}/{label} | urg {urgency}/10{flag_str} | {message}")
+        print(f"- {local} | {branch}/{label} | urg {urgency}/10{flag_str} | {who}{message}")
 
 
 if __name__ == "__main__":

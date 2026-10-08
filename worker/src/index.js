@@ -5,6 +5,7 @@ import { rateLimit } from "./rateLimit.js";
 import {
   DEFAULT_MAX_FOLLOW_UPS,
   callChatModel,
+  extractVisitorName,
   followUpsUsed,
   transcriptToMessages,
 } from "./chat.js";
@@ -172,6 +173,9 @@ async function finalizeChat(request, env, session, agentReply) {
   record.channel = "chat";
   record.transcript = session.transcript;
   record.follow_ups_used = followUpsUsed(session.transcript);
+  // Best-effort: ask the chat model to pull the visitor's stated name out of
+  // the transcript. Returns null when unknown or on any failure.
+  record.submitter_name = await extractVisitorName(env, session.transcript);
 
   const reply =
     agentReply ||
@@ -198,6 +202,7 @@ async function finalizeChat(request, env, session, agentReply) {
       high_urgency: record.high_urgency,
       stored: true,
       path: stored.path,
+      submitter_name: record.submitter_name,
       scoring: buildScoring(record),
     });
   } catch (error) {

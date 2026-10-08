@@ -1,10 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
+  buildNameExtractionMessages,
   buildSystemPrompt,
   extractJson,
   followUpsUsed,
   parseAgentDecision,
+  parseNameExtraction,
   transcriptToMessages,
 } from "../src/chat.js";
 
@@ -52,6 +54,44 @@ test("buildSystemPrompt bakes in the follow-up cap", () => {
   const prompt = buildSystemPrompt(3);
   assert.match(prompt, /up to 3 short follow-up questions/);
   assert.match(prompt, /STRICT JSON/);
+});
+
+test("buildSystemPrompt requires asking the visitor's name first", () => {
+  const prompt = buildSystemPrompt(3);
+  assert.match(prompt, /FIRST follow-up question must always ask for the visitor's name/);
+  assert.doesNotMatch(prompt, /ask nothing and finalize immediately/);
+});
+
+test("parseNameExtraction parses a stated name", () => {
+  assert.equal(parseNameExtraction('{"name":"Jane Doe"}'), "Jane Doe");
+  assert.equal(parseNameExtraction('Sure! {"name":"  Yiyin Zhao "}'), "Yiyin Zhao");
+});
+
+test("parseNameExtraction returns null when name is null or missing", () => {
+  assert.equal(parseNameExtraction('{"name":null}'), null);
+  assert.equal(parseNameExtraction('{"name":""}'), null);
+  assert.equal(parseNameExtraction('{"name":"   "}'), null);
+  assert.equal(parseNameExtraction('{"other":"x"}'), null);
+  assert.equal(parseNameExtraction("no json"), null);
+  assert.equal(parseNameExtraction(null), null);
+});
+
+test("parseNameExtraction rejects non-string and overlong names", () => {
+  assert.equal(parseNameExtraction('{"name":42}'), null);
+  assert.equal(parseNameExtraction(`{"name":"${"x".repeat(121)}"}`), null);
+});
+
+test("buildNameExtractionMessages maps transcript roles and content", () => {
+  const messages = buildNameExtractionMessages([
+    { role: "user", content: "urgent jira ticket" },
+    { role: "assistant", content: "May I have your name?" },
+    { role: "user", content: "I'm Billy Cheung" },
+  ]);
+  assert.equal(messages[0].role, "system");
+  assert.match(messages[0].content, /STRICT JSON/);
+  assert.match(messages[1].content, /Visitor: urgent jira ticket/);
+  assert.match(messages[1].content, /Assistant: May I have your name\?/);
+  assert.match(messages[1].content, /Visitor: I'm Billy Cheung/);
 });
 
 test("transcriptToMessages prepends system prompt", () => {
