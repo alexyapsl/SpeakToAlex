@@ -19,11 +19,12 @@ export const VIP_LIST = [
   { name: "Josef Tse", title: "D2C Group Head (Alex's boss)" },
   { name: "Billy Cheung", title: "MX Head of Department / 2nd in command, HK office" },
   { name: "Martina Lai", title: "CE Head of Department / 2nd in command, HK office" },
+  { name: "Helen Lee Hyunah", title: "Chief Finance Officer (CFO), Samsung Hong Kong" },
 ];
 export const VIP_BOOST = 2;
 
 const VIP_INSTRUCTION =
-  "Requests involving Samsung Hong Kong senior leadership are automatically high priority: Yiyin Zhao (HK President), Josef Tse (D2C Group Head, Alex's boss), Billy Cheung (MX Head of Department), Martina Lai (CE Head of Department). Anything touching these people is at least \"Very important; needs same-day response\", and higher if it also has a hard deadline or blocks them.";
+  "Requests involving Samsung Hong Kong senior leadership are automatically high priority: Yiyin Zhao (HK President), Josef Tse (D2C Group Head, Alex's boss), Billy Cheung (MX Head of Department), Martina Lai (CE Head of Department), Helen Lee Hyunah (Chief Finance Officer). Anything touching these people is at least \"Very important; needs same-day response\", and higher if it also has a hard deadline or blocks them.";
 
 export function findVipMatches(text) {
   if (typeof text !== "string" || !text) return [];

@@ -70,12 +70,15 @@ test("findVipMatches catches full names in either order, case-insensitive", () =
   assert.deepEqual(findVipMatches("message from zhao yiyin's office"), ["Yiyin Zhao"]);
   assert.deepEqual(findVipMatches("MARTINA LAI called"), ["Martina Lai"]);
   assert.deepEqual(findVipMatches("billy cheung and martina lai"), ["Billy Cheung", "Martina Lai"]);
+  assert.deepEqual(findVipMatches("CFO Helen Lee Hyunah approved"), ["Helen Lee Hyunah"]);
+  assert.deepEqual(findVipMatches("approval from hyunah lee helen"), ["Helen Lee Hyunah"]);
 });
 
 test("findVipMatches catches first names standalone", () => {
   assert.deepEqual(findVipMatches("josef wants to speak to you"), ["Josef Tse"]);
   assert.deepEqual(findVipMatches("Hi Yiyin needs to speak to you"), ["Yiyin Zhao"]);
   assert.deepEqual(findVipMatches("billy is here"), ["Billy Cheung"]);
+  assert.deepEqual(findVipMatches("Helen from finance called"), ["Helen Lee Hyunah"]);
 });
 
 test("findVipMatches ignores partial or absent names", () => {
