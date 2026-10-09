@@ -61,6 +61,18 @@ form { display: grid; gap: 12px; }
 .chat-form.hidden { display: none; }
 .chat-form textarea { flex: 1; min-height: 52px; max-height: 200px; }
 .chat-form button { flex-shrink: 0; }
+
+/* Mobile: button goes below the compose box, full width. Desktop keeps the
+   side-by-side layout above. */
+@media (max-width: 600px) {
+  .chat-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .chat-form button {
+    width: 100%;
+  }
+}
 label {
   font-family: "Poppins", Arial, sans-serif;
   font-weight: 600;

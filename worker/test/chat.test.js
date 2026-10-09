@@ -62,6 +62,13 @@ test("buildSystemPrompt requires asking the visitor's name first", () => {
   assert.doesNotMatch(prompt, /ask nothing and finalize immediately/);
 });
 
+test("buildSystemPrompt requires a neutral closing with no alerting claims", () => {
+  const prompt = buildSystemPrompt(3);
+  assert.match(prompt, /noted this down and will let Alex know/);
+  assert.match(prompt, /Never say or imply that Alex has been alerted/);
+  assert.doesNotMatch(prompt, /alerted directly right away/);
+});
+
 test("buildSystemPrompt includes Alex's away dates context", () => {
   const prompt = buildSystemPrompt(3);
   assert.match(prompt, /16 to 25 October 2026/);

@@ -177,11 +177,9 @@ async function finalizeChat(request, env, session, agentReply) {
   // the transcript. Returns null when unknown or on any failure.
   record.submitter_name = await extractVisitorName(env, session.transcript);
 
+  // Neutral fallback: never claim Alex has been alerted or will act.
   const reply =
-    agentReply ||
-    (record.decision === "whatsapp"
-      ? "This sounds urgent — Alex is being alerted directly right away."
-      : "Thanks — I've got everything I need and will pass this along to Alex.");
+    agentReply || "Thanks — I've noted this down and will let Alex know.";
 
   session.status = "finalized";
   session.finalized_at = now;
