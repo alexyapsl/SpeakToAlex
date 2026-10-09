@@ -83,13 +83,21 @@ function finishConversation(data) {
   form.classList.add("hidden");
   const scoring = scoringHtml(data.scoring);
   if (data.decision === "whatsapp") {
-    addBubble(
+    const qrAvailable = typeof window.qrcode === "function";
+    const bubble = addBubble(
       "agent end",
       `<strong>Wow this sounds serious — you can WhatsApp him directly (he is probably eating his Hakata Ramen though)</strong>
+       <a class="whatsapp-button" href="${WHATSAPP_URL}" target="_blank" rel="noopener">WhatsApp Alex directly</a>
+       ${qrAvailable ? '<div class="qr-row"><div class="qr-code"></div><div class="qr-hint">On a computer? Scan with your phone to open the chat</div></div>' : ""}
        <div class="ref">Reference: ${escapeHtml(data.id || "stored")}</div>
-       ${scoring}
-       <a class="whatsapp-button" href="${WHATSAPP_URL}" target="_blank" rel="noopener">WhatsApp Alex directly</a>`,
+       ${scoring}`,
     );
+    if (qrAvailable) {
+      const qr = window.qrcode(0, "M");
+      qr.addData(WHATSAPP_URL);
+      qr.make();
+      bubble.querySelector(".qr-code").innerHTML = qr.createImgTag(4, 8);
+    }
   } else {
     addBubble(
       "agent end",

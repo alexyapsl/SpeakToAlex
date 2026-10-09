@@ -171,6 +171,24 @@ button:disabled { opacity: 0.6; cursor: wait; }
 .msg .ref { font-size: 0.85rem; color: var(--brand-mid-gray); }
 .msg .whatsapp-button { margin-top: 12px; }
 
+.qr-row {
+  margin-top: 14px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.qr-code img { display: block; border-radius: 8px; }
+.qr-hint {
+  font-size: 0.85rem;
+  color: var(--brand-mid-gray);
+  max-width: 200px;
+  line-height: 1.4;
+}
+/* QR is for desktop — on phones the button above is already tappable. */
+@media (max-width: 600px) {
+  .qr-row { display: none; }
+}
+
 .msg.typing { display: inline-flex; gap: 5px; align-items: center; }
 .msg.typing .dot {
   width: 7px;
