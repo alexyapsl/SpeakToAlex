@@ -75,6 +75,13 @@ test("buildSystemPrompt includes Alex's away dates context", () => {
   assert.match(prompt, /CANNOT attend or be scheduled into any meeting/);
 });
 
+test("buildSystemPrompt allows answering availability questions only", () => {
+  const prompt = buildSystemPrompt(3);
+  assert.match(prompt, /Availability questions/);
+  assert.match(prompt, /back on 26 October 2026/);
+  assert.match(prompt, /ONLY kind of visitor question you may answer/);
+});
+
 test("buildSystemPrompt limits the agent to taking messages only", () => {
   const prompt = buildSystemPrompt(3);
   assert.match(prompt, /ONLY job is to take a message for Alex/);
