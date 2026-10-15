@@ -79,6 +79,8 @@ test("buildSystemPrompt allows answering availability questions only", () => {
   const prompt = buildSystemPrompt(3);
   assert.match(prompt, /Availability questions/);
   assert.match(prompt, /back on 26 October 2026/);
+  assert.match(prompt, /NEVER finalize on an availability question/);
+  assert.match(prompt, /invite them to leave a message for Alex/);
   assert.match(prompt, /ONLY kind of visitor question you may answer/);
 });
 
