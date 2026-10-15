@@ -1,4 +1,11 @@
 import { applyVipBoost, buildTypeSafeRequest, decideRoute } from "./routing.js";
+import {
+  CONFIDENTIAL_BLOCK_REPLY,
+  buildConfidentialityRequest,
+  detectSecretFormat,
+  isConfidentialBlocked,
+  scoreConfidentiality,
+} from "./confidentiality.js";
 import { storeMessage } from "./githubStorage.js";
 import { verifyTurnstile } from "./turnstile.js";
 import { rateLimit } from "./rateLimit.js";
@@ -40,6 +47,64 @@ function json(env, request, status, body) {
 
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Screen one visitor message for confidential content. Returns
+// { raw, mapped, rounded, confidence, blocked, deterministic? } or null when
+// the model check is unavailable. Fails OPEN on API errors (routing already
+// degrades the same way) — the deterministic credential check always runs.
+async function assessConfidentiality(env, message) {
+  if (detectSecretFormat(message)) {
+    return { raw: 9, mapped: 10, rounded: 10, confidence: 1, blocked: true, deterministic: true };
+  }
+  if (!env.TYPESAFE_API_KEY) return null;
+  try {
+    const payload = buildConfidentialityRequest(message);
+    const response = await callTypeSafe(env, payload);
+    const scored = scoreConfidentiality(response?.answers?.confidentiality);
+    return { ...scored, blocked: isConfidentialBlocked(scored) };
+  } catch (error) {
+    console.error("confidentiality_check_failed", String(error?.message || error));
+    return null;
+  }
+}
+
+// Audit record for a blocked message: content is withheld, only the score is
+// kept so Alex can see that a confidential submission was refused.
+function buildBlockedRecord({ id, now, confidentiality, channel, sessionId = null }) {
+  return {
+    version: 2,
+    id,
+    received_at: now,
+    channel,
+    session_id: sessionId,
+    message: "[withheld: blocked as confidential]",
+    message_withheld: true,
+    blocked: true,
+    confidentiality: {
+      score: confidentiality.rounded,
+      raw: confidentiality.raw,
+      deterministic: !!confidentiality.deterministic,
+    },
+    branch: null,
+    labels: {},
+    urgency: null,
+    decision: "blocked",
+    high_urgency: false,
+    needs_review: true,
+    confidence: {},
+    model: null,
+    routing_status: "blocked_confidential",
+    storage_status: "stored",
+  };
+}
+
+async function storeBlockedRecord(env, record) {
+  try {
+    await storeMessage(env, record);
+  } catch (error) {
+    console.error("blocked_record_storage_failed", String(error?.message || error));
+  }
 }
 
 async function callTypeSafe(env, payload) {
@@ -95,6 +160,7 @@ function buildScoring(record) {
     routing_status: record.routing_status,
     vip_matches: record.vip_matches ?? [],
     vip_boost: record.vip_boost ?? 0,
+    confidentiality: record.confidentiality ?? null,
   };
 }
 
@@ -173,6 +239,13 @@ async function finalizeChat(request, env, session, agentReply) {
   record.channel = "chat";
   record.transcript = session.transcript;
   record.follow_ups_used = followUpsUsed(session.transcript);
+  // Surface the highest confidentiality score seen during the conversation.
+  const confScores = session.transcript
+    .map((entry) => entry.confidentiality?.score)
+    .filter((score) => typeof score === "number");
+  if (confScores.length) {
+    record.confidentiality = { max_score: Math.max(...confScores) };
+  }
   // Best-effort: ask the chat model to pull the visitor's stated name out of
   // the transcript. Returns null when unknown or on any failure.
   record.submitter_name = await extractVisitorName(env, session.transcript);
@@ -259,7 +332,39 @@ async function handleChatMessage(request, env) {
     };
   }
 
-  session.transcript.push({ role: "user", content: message, at: new Date().toISOString() });
+  // Confidentiality gate: screen BEFORE the message touches the transcript.
+  // Blocked messages are never stored with content — only a withheld audit
+  // record (score, no text) is kept — and the session stays open so the
+  // visitor can rephrase.
+  const confidentiality = await assessConfidentiality(env, message);
+  if (confidentiality?.blocked) {
+    try {
+      await saveSession(env, session);
+    } catch (error) {
+      console.error("session_save_failed", String(error?.message || error));
+    }
+    const blockedRecord = buildBlockedRecord({
+      id: crypto.randomUUID(),
+      now: new Date().toISOString(),
+      confidentiality,
+      channel: "chat",
+      sessionId: session.id,
+    });
+    await storeBlockedRecord(env, blockedRecord);
+    return json(env, request, 200, {
+      sessionId: session.id,
+      reply: CONFIDENTIAL_BLOCK_REPLY,
+      done: false,
+      blocked: true,
+      confidentiality: { score: confidentiality.rounded },
+    });
+  }
+
+  const entry = { role: "user", content: message, at: new Date().toISOString() };
+  if (confidentiality) {
+    entry.confidentiality = { score: confidentiality.rounded, blocked: false };
+  }
+  session.transcript.push(entry);
   if (session.transcript.length > MAX_TRANSCRIPT_ENTRIES) {
     return json(env, request, 413, { error: "conversation_too_long" });
   }
@@ -342,6 +447,24 @@ export default {
 
     const turnstile = await verifyTurnstile(env, body.turnstileToken, ip);
     if (!turnstile.ok) return json(env, request, 403, { error: "turnstile_failed" });
+
+    const confidentiality = await assessConfidentiality(env, message);
+    if (confidentiality?.blocked) {
+      const blockedRecord = buildBlockedRecord({
+        id: crypto.randomUUID(),
+        now: new Date().toISOString(),
+        confidentiality,
+        channel: "route",
+      });
+      await storeBlockedRecord(env, blockedRecord);
+      return json(env, request, 200, {
+        id: blockedRecord.id,
+        decision: "blocked",
+        blocked: true,
+        stored: true,
+        confidentiality: { score: confidentiality.rounded },
+      });
+    }
 
     const id = crypto.randomUUID();
     const now = new Date().toISOString();

@@ -67,6 +67,9 @@ function scoringHtml(scoring) {
   if (Array.isArray(scoring.vip_matches) && scoring.vip_matches.length) {
     parts.push(`VIP: ${scoring.vip_matches.join(", ")} (+${scoring.vip_boost || 2})`);
   }
+  if (scoring.confidentiality && typeof scoring.confidentiality.max_score === "number") {
+    parts.push(`confidentiality: ${scoring.confidentiality.max_score}/10`);
+  }
   if (!parts.length) return "";
   return `<div class="scoring">Jev &rarr; ${escapeHtml(parts.join(" \u00b7 "))}</div>`;
 }
